@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IT Support AI Assistant</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0D1B4B; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+
+    /* ── Layout ── */
+    .app { display: flex; width: 100%; max-width: 1100px; height: 97vh; gap: 12px; padding: 12px; }
+    .chat-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .ticket-panel { width: 340px; display: flex; flex-direction: column; background: #1B2A6B; border-radius: 14px; overflow: hidden; flex-shrink: 0; transition: width 0.3s; }
+    .ticket-panel.collapsed { width: 52px; }
+
+    /* ── Chat Header ── */
+    .header { background: #1B2A6B; border-radius: 14px 14px 0 0; padding: 13px 18px; display: flex; align-items: center; gap: 12px; }
+    .header-icon { width: 38px; height: 38px; background: #2D5BE3; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .header-info h1 { color: #fff; font-size: 15px; font-weight: 700; }
+    .header-info p { color: #C9DEFF; font-size: 11px; }
+    .status { margin-left: auto; display: flex; align-items: center; gap: 6px; color: #86efac; font-size: 11px; }
+    .status-dot { width: 7px; height: 7px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+    /* ── Quick Actions ── */
+    .quick-actions { display: flex; gap: 7px; flex-wrap: wrap; padding: 9px 14px; background: #F4F7FF; border-bottom: 1px solid #E8EEF8; }
+    .quick-btn { padding: 5px 11px; border: 1.5px solid #C9DEFF; background: #fff; border-radius: 20px; font-size: 11px; color: #1B2A6B; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .quick-btn:hover { background: #EEF2FF; border-color: #2D5BE3; color: #2D5BE3; }
+
+    /* ── Chat Area ── */
+    .chat-area { background: #F4F7FF; flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .message { display: flex; gap: 9px; max-width: 88%; }
+    .message.user { align-self: flex-end; flex-direction: row-reverse; }
+    .message-avatar { width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+    .message.bot .message-avatar { background: #2D5BE3; }
+    .message.user .message-avatar { background: #1B2A6B; }
+    .message-bubble { padding: 11px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.55; }
+    .message.bot .message-bubble { background: #fff; color: #1E293B; border-radius: 4px 12px 12px 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .message.user .message-bubble { background: #1B2A6B; color: #fff; border-radius: 12px 4px 12px 12px; }
+
+    .intent-chip { display: inline-block; background: #EEF2FF; color: #4338CA; border-radius: 4px; padding: 2px 8px; font-size: 10.5px; font-weight: 700; margin-bottom: 5px; }
+    .badge { border-radius: 7px; padding: 6px 10px; font-size: 11.5px; margin-top: 7px; display: flex; align-items: center; gap: 7px; }
+    .badge.escalation { background: #FEF3C7; border: 1px solid #F59E0B; color: #92400E; }
+    .badge.ticket { background: #DCFCE7; border: 1px solid #22C55E; color: #15803D; cursor: pointer; }
+    .badge.ticket:hover { background: #BBF7D0; }
+
+    /* ── Agent Pipeline Steps (inline) ── */
+    .pipeline-toggle { font-size: 11px; color: #64748B; cursor: pointer; margin-top: 5px; user-select: none; }
+    .pipeline-toggle:hover { color: #2D5BE3; }
+    .pipeline-steps { display: none; margin-top: 8px; }
+    .pipeline-steps.open { display: flex; flex-direction: column; gap: 4px; }
+    .step { display: flex; align-items: flex-start; gap: 8px; font-size: 11px; }
+    .step-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; flex-shrink: 0; margin-top: 1px; }
+    .step-line { width: 2px; background: #E2E8F0; margin-left: 9px; height: 8px; }
+    .step-text { color: #475569; line-height: 1.4; padding-top: 2px; }
+    .step-text strong { color: #1E293B; }
+
+    /* ── Typing ── */
+    .typing { display: flex; gap: 4px; align-items: center; }
+    .typing span { width: 6px; height: 6px; background: #94A3B8; border-radius: 50%; animation: bounce 1.2s infinite; }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
+
+    /* ── Input ── */
+    .input-area { background: #fff; border-radius: 0 0 14px 14px; padding: 12px 14px; display: flex; gap: 9px; align-items: flex-end; border-top: 1px solid #E2E8F0; }
+    textarea { flex: 1; border: 1.5px solid #C9DEFF; border-radius: 10px; padding: 9px 13px; font-size: 13.5px; font-family: inherit; resize: none; outline: none; min-height: 42px; max-height: 110px; color: #1E293B; transition: border-color 0.2s; }
+    textarea:focus { border-color: #2D5BE3; }
+    textarea::placeholder { color: #94A3B8; }
+    .send-btn { width: 42px; height: 42px; background: #2D5BE3; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s, transform 0.1s; }
+    .send-btn:hover { background: #1B2A6B; }
+    .send-btn:active { transform: scale(0.95); }
+    .send-btn svg { width: 17px; height: 17px; fill: white; }
+
+    /* ── Ticket Panel ── */
+    .ticket-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+    .ticket-header h2 { color: #fff; font-size: 14px; font-weight: 700; white-space: nowrap; }
+    .ticket-count { background: #2D5BE3; color: #fff; border-radius: 10px; padding: 1px 8px; font-size: 11px; font-weight: 700; min-width: 20px; text-align: center; }
+    .collapse-btn { margin-left: auto; width: 28px; height: 28px; background: rgba(255,255,255,0.1); border: none; border-radius: 7px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #C9DEFF; font-size: 14px; flex-shrink: 0; }
+    .collapse-btn:hover { background: rgba(255,255,255,0.2); }
+
+    .ticket-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+    .ticket-list::-webkit-scrollbar { width: 4px; }
+    .ticket-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+    .ticket-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
+    .ticket-card-header { padding: 10px 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .ticket-card-header:hover { background: rgba(255,255,255,0.05); }
+    .ticket-id { font-size: 12px; font-weight: 700; color: #C9DEFF; font-family: 'Consolas', monospace; }
+    .ticket-intent { font-size: 10px; color: #94A3B8; }
+    .ticket-status { margin-left: auto; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; }
+    .ticket-status.open { background: rgba(34,197,94,0.2); color: #86efac; }
+    .ticket-status.escalated { background: rgba(245,158,11,0.2); color: #FCD34D; }
+    .ticket-status.resolved { background: rgba(96,165,250,0.2); color: #93C5FD; }
+
+    .ticket-body { display: none; border-top: 1px solid rgba(255,255,255,0.08); }
+    .ticket-body.open { display: block; }
+
+    /* ── Agent Pipeline in Ticket ── */
+    .pipeline { padding: 12px; }
+    .pipeline-title { font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .pipeline-row { display: flex; align-items: stretch; margin-bottom: 4px; }
+    .pipeline-connector { display: flex; flex-direction: column; align-items: center; width: 28px; flex-shrink: 0; }
+    .p-circle { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .p-line { width: 2px; flex: 1; min-height: 6px; background: rgba(255,255,255,0.1); }
+    .pipeline-content { flex: 1; padding: 2px 0 8px 8px; }
+    .p-agent { font-size: 11px; font-weight: 700; color: #E2E8F0; }
+    .p-detail { font-size: 10px; color: #94A3B8; margin-top: 2px; line-height: 1.4; }
+    .p-action { display: inline-flex; align-items: center; gap: 4px; background: rgba(45,91,227,0.25); border: 1px solid rgba(45,91,227,0.4); border-radius: 5px; padding: 2px 7px; font-size: 10px; color: #93C5FD; margin-top: 4px; font-family: monospace; }
+
+    .ticket-meta { padding: 0 12px 12px; }
+    .meta-row { display: flex; justify-content: space-between; font-size: 10px; color: #64748B; margin-bottom: 3px; }
+    .meta-row span:last-child { color: #C9DEFF; }
+
+    .ticket-message { margin: 0 12px 10px; background: rgba(255,255,255,0.05); border-radius: 6px; padding: 7px 10px; font-size: 11px; color: #94A3B8; font-style: italic; }
+
+    .empty-tickets { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 20px; text-align: center; }
+    .empty-tickets .icon { font-size: 32px; opacity: 0.4; }
+    .empty-tickets p { color: #64748B; font-size: 12px; line-height: 1.5; }
+
+    .ticket-panel.collapsed .ticket-header h2,
+    .ticket-panel.collapsed .ticket-count,
+    .ticket-panel.collapsed .ticket-list { display: none; }
+    .ticket-panel.collapsed .ticket-header { justify-content: center; padding: 14px 0; }
+    .ticket-panel.collapsed .collapse-btn { margin: 0; }
+
+    /* ── Welcome ── */
+    .welcome { text-align: center; padding: 20px 14px; }
+    .welcome h2 { color: #1B2A6B; font-size: 17px; margin-bottom: 7px; }
+    .welcome p { color: #64748B; font-size: 12.5px; line-height: 1.6; }
+    .welcome-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin-top: 12px; }
+    .welcome-chip { background: #EEF2FF; color: #4338CA; padding: 5px 13px; border-radius: 20px; font-size: 11px; cursor: pointer; border: none; }
+    .welcome-chip:hover { background: #C7D2FE; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── CHAT PANEL ── -->
+  <div class="chat-panel">
+    <div class="header">
+      <div class="header-icon">🤖</div>
+      <div class="header-info">
+        <h1>IT Support Assistant</h1>
+        <p>Multi-Agent AI · RAG + MCP</p>
+      </div>
+      <div class="status"><div class="status-dot"></div>Online</div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="quick-btn" onclick="sendQuick('I forgot my password and need a reset')">🔑 Password Reset</button>
+      <button class="quick-btn" onclick="sendQuick('My WiFi is connected but I have no internet access')">📶 WiFi Issue</button>
+      <button class="quick-btn" onclick="sendQuick('My VPN keeps disconnecting')">🔒 VPN Problem</button>
+      <button class="quick-btn" onclick="sendQuick('Microsoft Teams crashes when I join a meeting')">💻 Software Crash</button>
+      <button class="quick-btn" onclick="sendQuick('My account is locked after failed login attempts')">🔐 Account Locked</button>
+    </div>
+
+    <div class="chat-area" id="chatArea">
+      <div class="welcome">
+        <h2>Hello! I'm your IT Support Assistant 👋</h2>
+        <p>I handle password resets, WiFi issues, VPN problems,<br>account lockouts, and software errors.</p>
+        <div class="welcome-chips">
+          <button class="welcome-chip" onclick="sendQuick('WiFi is down for everyone on floor 3')">Report outage</button>
+          <button class="welcome-chip" onclick="sendQuick('I need to create a support ticket')">Create a ticket</button>
+          <button class="welcome-chip" onclick="sendQuick('What can you help with?')">What can you do?</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <textarea id="messageInput" placeholder="Describe your IT issue..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+        oninput="this.style.height='42px';this.style.height=this.scrollHeight+'px'"></textarea>
+      <button class="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── TICKET PANEL ── -->
+  <div class="ticket-panel" id="ticketPanel">
+    <div class="ticket-header">
+      <span style="font-size:18px">🎫</span>
+      <h2>Ticket Tracker</h2>
+      <div class="ticket-count" id="ticketCount">0</div>
+      <button class="collapse-btn" onclick="togglePanel()" title="Collapse">◀</button>
+    </div>
+    <div class="ticket-list" id="ticketList">
+      <div class="empty-tickets" id="emptyTickets">
+        <div class="icon">📭</div>
+        <p>No tickets yet.<br>Tickets and escalations<br>will appear here.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'http://localhost:8000/support';
+const USER_ID = 'demo_user';
+let msgCount = 0;
+let tickets = [];
+let panelCollapsed = false;
+
+const AGENT_COLORS = {
+  'IntakeAgent':     '#2D5BE3',
+  'KnowledgeAgent':  '#0891B2',
+  'WorkflowAgent':   '#EA580C',
+  'EscalationAgent': '#D97706',
+  'ResponseAgent':   '#16A34A',
+};
+const AGENT_ICONS = {
+  'IntakeAgent': '📥', 'KnowledgeAgent': '🔍',
+  'WorkflowAgent': '⚙️', 'EscalationAgent': '⚠️', 'ResponseAgent': '💬',
+};
+
+function togglePanel() {
+  panelCollapsed = !panelCollapsed;
+  const panel = document.getElementById('ticketPanel');
+  const btn = panel.querySelector('.collapse-btn');
+  panel.classList.toggle('collapsed', panelCollapsed);
+  btn.textContent = panelCollapsed ? '▶' : '◀';
+}
+
+function sendQuick(text) {
+  document.getElementById('messageInput').value = text;
+  sendMessage();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('messageInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = '42px';
+  document.querySelector('.welcome')?.remove();
+  appendUserMessage(text);
+  const typingId = appendTyping();
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: USER_ID, message: text })
+    });
+    removeTyping(typingId);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    appendBotMessage(text, data);
+    registerTicket(text, data);
+  } catch (e) {
+    removeTyping(typingId);
+    const sim = simulateResponse(text);
+    appendBotMessage(text, sim);
+    registerTicket(text, sim);
+  }
+}
+
+/* ─── Register ticket / escalation into the tracker ─── */
+function registerTicket(userMsg, data) {
+  const ticketId = data.automated_result?.ticket_id;
+  const isEscalation = data.escalation_needed;
+  if (!ticketId && !isEscalation) return;
+
+  const id = ticketId || ('ESC-' + String(Date.now()).slice(-4));
+  const status = isEscalation ? 'escalated' : 'open';
+  const ticket = {
+    id, status,
+    intent: data.intent || 'general_support',
+    message: userMsg,
+    response: data.response,
+    trace: data.trace || [],
+    automated_result: data.automated_result || {},
+    escalation_reason: data.escalation_reason,
+    timestamp: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+  };
+  tickets.unshift(ticket);
+  renderTickets();
+  // Auto-expand panel if collapsed
+  if (panelCollapsed) togglePanel();
+}
+
+/* ─── Render ticket list ─── */
+function renderTickets() {
+  document.getElementById('ticketCount').textContent = tickets.length;
+  const list = document.getElementById('ticketList');
+  const empty = document.getElementById('emptyTickets');
+  if (tickets.length === 0) { empty.style.display = 'flex'; return; }
+  empty.style.display = 'none';
+
+  // Re-render all cards
+  list.innerHTML = '';
+  tickets.forEach((t, idx) => {
+    const card = document.createElement('div');
+    card.className = 'ticket-card';
+    card.id = 'tc_' + idx;
+
+    const statusLabel = t.status === 'escalated' ? '🔺 Escalated' : (t.status === 'resolved' ? '✅ Resolved' : '🟢 Open');
+
+    card.innerHTML = `
+      <div class="ticket-card-header" onclick="toggleTicket(${idx})">
+        <div>
+          <div class="ticket-id">${t.id}</div>
+          <div class="ticket-intent">${t.intent}</div>
+        </div>
+        <div class="ticket-status ${t.status}">${statusLabel}</div>
+      </div>
+      <div class="ticket-body open" id="tb_${idx}">
+        <div class="ticket-message">"${escHtml(t.message)}"</div>
+        ${buildPipeline(t)}
+        <div class="ticket-meta">
+          <div class="meta-row"><span>Time</span><span>${t.timestamp}</span></div>
+          <div class="meta-row"><span>Ticket ID</span><span>${t.id}</span></div>
+          ${t.automated_result?.priority ? `<div class="meta-row"><span>Priority</span><span>${t.automated_result.priority}</span></div>` : ''}
+          ${t.escalation_reason ? `<div class="meta-row"><span>Escalation</span><span style="color:#FCD34D;max-width:160px;text-align:right">${escHtml(t.escalation_reason)}</span></div>` : ''}
+          <div class="meta-row" style="margin-top:8px">
+            <button onclick="resolveTicket(${idx})" style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#86efac;border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;width:100%">
+              Mark Resolved ✓
+            </button>
+          </div>
+        </div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function buildPipeline(ticket) {
+  const agentNames = ['IntakeAgent','KnowledgeAgent','WorkflowAgent','EscalationAgent','ResponseAgent'];
+  const traceMap = {};
+  (ticket.trace || []).forEach(t => {
+    agentNames.forEach(a => { if (t.includes(a)) traceMap[a] = t; });
+  });
+
+  let html = `<div class="pipeline"><div class="pipeline-title">Agent Pipeline</div>`;
+  agentNames.forEach((agent, i) => {
+    const color = AGENT_COLORS[agent] || '#64748B';
+    const icon = AGENT_ICONS[agent] || '●';
+    const traceText = traceMap[agent] || '';
+    const detail = traceText.replace(agent, '').replace(/^[\s:→-]+/, '');
+
+    // Special: WorkflowAgent — show MCP tool call if any
+    let actionHtml = '';
+    if (agent === 'WorkflowAgent') {
+      const tool = ticket.automated_result?.system
+        ? (Object.keys(ticket.automated_result).includes('ticket_id') ? 'create_ticket()' :
+           Object.keys(ticket.automated_result).includes('message') ? 'reset_password()' :
+           Object.keys(ticket.automated_result).includes('finding') ? 'check_vpn_logs()' :
+           Object.keys(ticket.automated_result).includes('requires_human_confirm') ? 'unlock_account()' : null)
+        : null;
+      if (tool) actionHtml = `<div class="p-action">⚡ MCP: ${tool}</div>`;
+    }
+    if (agent === 'EscalationAgent' && ticket.escalation_needed) {
+      actionHtml = `<div class="p-action" style="background:rgba(245,158,11,0.2);border-color:rgba(245,158,11,0.4);color:#FCD34D">🔺 Routed to human</div>`;
+    }
+    if (agent === 'KnowledgeAgent') {
+      const chunks = traceText.match(/(\d+) knowledge/)?.[1] || '0';
+      actionHtml = `<div class="p-action" style="background:rgba(8,145,178,0.2);border-color:rgba(8,145,178,0.4);color:#67E8F9">📚 ${chunks} chunks retrieved</div>`;
+    }
+
+    html += `
+      <div class="pipeline-row">
+        <div class="pipeline-connector">
+          <div class="p-circle" style="background:${color}">${icon}</div>
+          ${i < agentNames.length-1 ? '<div class="p-line"></div>' : ''}
+        </div>
+        <div class="pipeline-content">
+          <div class="p-agent">${agent}</div>
+          ${detail ? `<div class="p-detail">${escHtml(detail)}</div>` : ''}
+          ${actionHtml}
+        </div>
+      </div>`;
+  });
+  return html + '</div>';
+}
+
+function toggleTicket(idx) {
+  const body = document.getElementById('tb_' + idx);
+  body.classList.toggle('open');
+}
+
+function resolveTicket(idx) {
+  tickets[idx].status = 'resolved';
+  renderTickets();
+}
+
+/* ─── Chat helpers ─── */
+function appendUserMessage(text) {
+  const chatArea = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'message user';
+  div.innerHTML = `<div class="message-avatar">👤</div><div class="message-bubble">${escHtml(text)}</div>`;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function appendBotMessage(userMsg, data) {
+  const chatArea = document.getElementById('chatArea');
+  const id = 'msg_' + (++msgCount);
+  const div = document.createElement('div');
+  div.className = 'message bot';
+
+  const chip = data.intent && data.intent !== 'general_support'
+    ? `<div class="intent-chip">${data.intent}</div>` : '';
+  const escBadge = data.escalation_needed
+    ? `<div class="badge escalation">⚠️ Escalated — routed to IT on-call team</div>` : '';
+  const tid = data.automated_result?.ticket_id;
+  const ticketBadge = tid
+    ? `<div class="badge ticket" onclick="highlightTicket('${tid}')">🎫 Ticket created: <strong>${tid}</strong> — click to view →</div>` : '';
+
+  // Mini pipeline trace toggle
+  const traceRows = buildMiniTrace(data.trace || []);
+
+  div.innerHTML = `
+    <div class="message-avatar">🤖</div>
+    <div style="flex:1;min-width:0">
+      ${chip}
+      <div class="message-bubble">${escHtml(data.response)}</div>
+      ${escBadge}${ticketBadge}
+      <div class="pipeline-toggle" onclick="togglePipeline('${id}')">▸ Show agent pipeline</div>
+      <div class="pipeline-steps" id="${id}">${traceRows}</div>
+    </div>`;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function buildMiniTrace(trace) {
+  const agentNames = ['IntakeAgent','KnowledgeAgent','WorkflowAgent','EscalationAgent','ResponseAgent'];
+  return agentNames.map((agent, i) => {
+    const color = AGENT_COLORS[agent] || '#64748B';
+    const icon = AGENT_ICONS[agent] || '●';
+    const line = trace.find(t => t.includes(agent)) || '';
+    const detail = line.replace(agent, '').replace(/^[\s:→-]+/, '') || '—';
+    return `
+      <div class="step">
+        <div style="display:flex;flex-direction:column;align-items:center;width:22px;flex-shrink:0">
+          <div class="step-dot" style="background:${color}">${icon}</div>
+          ${i < 4 ? '<div style="width:2px;height:8px;background:#E2E8F0;margin-top:2px"></div>' : ''}
+        </div>
+        <div class="step-text"><strong>${agent}:</strong> ${escHtml(detail)}</div>
+      </div>`;
+  }).join('');
+}
+
+function togglePipeline(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  const btn = el.previousElementSibling;
+  btn.textContent = el.classList.contains('open') ? '▾ Hide agent pipeline' : '▸ Show agent pipeline';
+}
+
+function highlightTicket(ticketId) {
+  if (panelCollapsed) togglePanel();
+  // Flash the card
+  const cards = document.querySelectorAll('.ticket-card');
+  cards.forEach(c => {
+    if (c.querySelector('.ticket-id')?.textContent === ticketId) {
+      c.style.outline = '2px solid #2D5BE3';
+      c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      setTimeout(() => c.style.outline = '', 2000);
+    }
+  });
+}
+
+function appendTyping() {
+  const chatArea = document.getElementById('chatArea');
+  const id = 'typing_' + Date.now();
+  const div = document.createElement('div');
+  div.id = id; div.className = 'message bot';
+  div.innerHTML = `<div class="message-avatar">🤖</div><div class="message-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return id;
+}
+function removeTyping(id) { document.getElementById(id)?.remove(); }
+
+function escHtml(t) {
+  return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+/* ─── Simulation fallback (when server not running) ─── */
+function simulateResponse(msg) {
+  const lower = msg.toLowerCase();
+  if (lower.includes('password') || lower.includes("can't log") || lower.includes('rest my')) {
+    return { response: "I've initiated a password reset for your account. A reset link has been sent to your company email — it expires in 15 minutes. If you still cannot sign in, I can open a ticket.", intent: "password_reset", escalation_needed: false, automated_result: {}, trace: ["IntakeAgent classified intent as 'password_reset' (confidence=3)", "KnowledgeAgent retrieved 3 knowledge chunks", "WorkflowAgent executed 1 automated action(s)", "EscalationAgent: escalation_needed=False", "ResponseAgent composed final response"] };
+  } else if (lower.includes('wifi') || lower.includes('internet') || lower.includes('network')) {
+    const broad = lower.includes('everyone') || lower.includes('floor') || lower.includes('all');
+    const tid = broad ? ('INC-' + Math.floor(Math.random()*9000+1000)) : null;
+    return { response: broad ? `Broad impact detected. I've created incident ticket ${tid} and escalated to the IT on-call team.` : "Recommended WiFi troubleshooting: Restart your computer, toggle WiFi off/on, try multiple websites, disconnect VPN and retest.", intent: "wifi_troubleshooting", escalation_needed: broad, automated_result: tid ? { ticket_id: tid, priority: "high", system: "ServiceNow (simulated)" } : {}, escalation_reason: broad ? "Potential broad impact — routing to IT on-call team." : null, trace: ["IntakeAgent classified intent as 'wifi_troubleshooting' (confidence=2)", "KnowledgeAgent retrieved 3 knowledge chunks", `WorkflowAgent executed ${broad?1:0} automated action(s)`, `EscalationAgent: escalation_needed=${broad}`, "ResponseAgent composed final response"] };
+  } else if (lower.includes('vpn')) {
+    return { response: "I reviewed VPN logs — repeated disconnects from your home ISP. Try the alternate gateway (us-west-2) or use Ethernet. Escalated to the network team.", intent: "vpn_issue", escalation_needed: true, automated_result: { finding: "Repeated disconnects detected", system: "Cisco AnyConnect (simulated)" }, escalation_reason: "Intent 'vpn_issue' requires human review.", trace: ["IntakeAgent classified intent as 'vpn_issue' (confidence=1)", "KnowledgeAgent retrieved 2 knowledge chunks", "WorkflowAgent executed 1 automated action(s)", "EscalationAgent: escalation_needed=True | reason: Intent 'vpn_issue' requires human review.", "ResponseAgent composed final response"] };
+  } else if (lower.includes('lock') || lower.includes('mfa') || lower.includes('sso')) {
+    return { response: "Account unlock submitted. A technician will verify and confirm within 15 minutes per security policy.", intent: "account_locked", escalation_needed: true, automated_result: { requires_human_confirm: true, system: "Active Directory (simulated)" }, escalation_reason: "Intent 'account_locked' requires human review.", trace: ["IntakeAgent classified intent as 'account_locked' (confidence=2)", "KnowledgeAgent retrieved 2 knowledge chunks", "WorkflowAgent executed 1 automated action(s)", "EscalationAgent: escalation_needed=True | reason: Intent 'account_locked' requires human review.", "ResponseAgent composed final response"] };
+  } else if (lower.includes('teams') || lower.includes('outlook') || lower.includes('office') || lower.includes('crash') || lower.includes('software')) {
+    const tid = 'INC-' + Math.floor(Math.random()*9000+1000);
+    return { response: `Software issue guidance: Try repairing the Office installation via Control Panel → Programs → Microsoft Office → Quick Repair. Logged as ticket ${tid}.`, intent: "software_issue", escalation_needed: false, automated_result: { ticket_id: tid, priority: "medium", system: "ServiceNow (simulated)" }, escalation_reason: null, trace: ["IntakeAgent classified intent as 'software_issue' (confidence=1)", "KnowledgeAgent retrieved 3 knowledge chunks", "WorkflowAgent executed 1 automated action(s)", "EscalationAgent: escalation_needed=False", "ResponseAgent composed final response"] };
+  } else {
+    return { response: "I can help with: password resets, account lockouts, WiFi troubleshooting, VPN issues, software problems, and ticket creation. Please describe your issue.", intent: "general_support", escalation_needed: false, automated_result: {}, trace: ["IntakeAgent classified intent as 'general_support' (confidence=0)", "KnowledgeAgent retrieved 1 knowledge chunk", "WorkflowAgent executed 0 automated action(s)", "EscalationAgent: escalation_needed=False", "ResponseAgent composed final response"] };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+Software installation failures are common IT support requests. Verify the user has admin rights, check available disk space, and confirm OS compatibility before proceeding.
+
+For application crashes, collect the error message, check for recent Windows or macOS updates that may conflict, and review the application event log for crash codes.
+
+If a user cannot open Microsoft Office, try repairing the Office installation via Control Panel > Programs > Microsoft Office > Change > Quick Repair. If that fails, run Online Repair.
+
+For Zoom or Teams connectivity issues: ensure the firewall allows UDP on ports 3478-3481, check microphone/camera permissions, and update the client to the latest version.
+
+Software license activation errors often result from expired licenses or concurrent session limits. Verify the license in the IT asset management system and reissue if needed.
+
+Slow application performance may be caused by insufficient RAM, background processes, or disk fragmentation. Close unnecessary applications and run a disk cleanup.

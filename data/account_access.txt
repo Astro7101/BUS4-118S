@@ -1,0 +1,11 @@
+Account lockouts occur after five consecutive failed login attempts per company policy.
+
+To unlock an account: verify user identity via employee ID or manager confirmation, then unlock the account in Active Directory. Never unlock without proper identity verification.
+
+Multi-factor authentication (MFA) failures are typically caused by time-sync issues on authenticator apps. Ask the user to sync their authenticator app time and retry.
+
+For Single Sign-On (SSO) errors: clear the browser cache, try an incognito window, or attempt a different supported browser (Chrome or Edge preferred).
+
+New employee account provisioning takes up to 24 hours after HR submits the onboarding request. Expedited provisioning requires manager approval via the IT portal.
+
+If a user is locked out of email specifically, check the mailbox quota in Exchange Admin Center. Full mailboxes block logins. Archive or delete old emails to restore access.

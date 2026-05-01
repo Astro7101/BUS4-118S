@@ -1,0 +1,11 @@
+Company-Secure is the corporate WiFi network. Always connect to Company-Secure for full access to internal systems.
+
+If a user cannot connect to WiFi: verify WiFi is enabled, confirm the correct network is selected, re-enter corporate credentials, forget the network, then reconnect.
+
+If a user is connected to WiFi but has no internet access: restart the computer, toggle WiFi off and on, try multiple websites, disconnect VPN and test again, report nearby outages to IT.
+
+For slow connection or dropped signal: move away from crowded areas, reduce bandwidth-heavy activities, close sync tools temporarily, and connect via Ethernet if available.
+
+For WiFi authentication errors: reset your password, verify device date and time, restart device and reconnect.
+
+If WiFi or internet is down in the entire area, the user cannot log in to the secure network, or VPN repeatedly fails, contact IT support and create or escalate a helpdesk ticket.
