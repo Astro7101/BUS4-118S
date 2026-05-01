@@ -1,5 +1,6 @@
 # Multi-Agent AI System for IT Support
 
+🔗 GitHub Repository: https://github.com/Astro7101/BUS4-118S
 A GitHub-ready capstone project for an agentic IT support assistant. The system demonstrates:
 - **Product-owner thinking** through scoped, high-volume IT use cases
 - **Multi-agent orchestration** with Intake, Knowledge, Workflow, Escalation, and Response agents
