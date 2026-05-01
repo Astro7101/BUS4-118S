@@ -67,13 +67,12 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Run Locally
+## How to Run
 
 ```bash
-python -m src.api.app
-```
+pip install -r requirements.txt
+uvicorn src.api.app:app --reload
 
-Server runs by default at `http://localhost:8000`.
 
 ## Example Requests
 
