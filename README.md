@@ -1,17 +1,46 @@
 # Multi-Agent AI System for IT Support
 
 🔗 GitHub Repository: https://github.com/Astro7101/BUS4-118S
-A GitHub-ready capstone project for an agentic IT support assistant. The system demonstrates:
-- **Product-owner thinking** through scoped, high-volume IT use cases
-- **Multi-agent orchestration** with Intake, Knowledge, Workflow, Escalation, and Response agents
-- **RAG** over internal IT support documentation
-- **Workflow automation** for password reset, ticket creation, and VPN diagnostics
-- **MCP-style integration** through a standardized tool registry abstraction
 
-## Repository Structure
+A capstone project for an agentic IT support assistant. The system demonstrates:
+
+- **Product-owner thinking** through scoped, high-volume IT use cases  
+- **Multi-agent orchestration** with Intake, Knowledge, Workflow, Escalation, and Response agents  
+- **RAG (Retrieval-Augmented Generation)** over internal IT support documentation  
+- **Workflow automation** for password reset, ticket creation, and VPN diagnostics  
+- **MCP-style integration** through a standardized tool registry abstraction  
+
+---
+
+## 🚀 Run Locally
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/Astro7101/BUS4-118S.git
+cd BUS4-118S
+```
+
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Run the application
+```bash
+uvicorn src.api.app:app --reload
+```
+
+### 4. Open in browser
+```
+http://localhost:8000/docs
+```
+
+---
+
+## 📁 Repository Structure
 
 ```
-it_support_github_ready/
+BUS4-118S/
 ├── src/
 │   ├── agents/
 │   ├── api/
@@ -21,20 +50,23 @@ it_support_github_ready/
 ├── docs/
 ├── scripts/
 ├── tests/
-├── .env.example
 ├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
 
-## Core Use Cases
+---
 
-1. Password reset and account lockout
-2. WiFi and network troubleshooting
-3. VPN issue triage
-4. IT ticket creation and escalation
+## 🎯 Core Use Cases
 
-## Architecture
+1. Password reset and account lockout  
+2. WiFi and network troubleshooting  
+3. VPN issue triage  
+4. IT ticket creation and escalation  
+
+---
+
+## 🏗️ Architecture
 
 ```mermaid
 flowchart LR
@@ -50,77 +82,67 @@ flowchart LR
     A --> U
 ```
 
-## Features
+---
 
-- FastAPI service with `/support` and `/health`
-- In-memory RAG with optional embeddings + FAISS
-- Lexical fallback if local embedding dependencies are unavailable
-- Modular agents for easier testing and explanation during presentation
+## ⚙️ Features
+
+- FastAPI service with `/support`, `/health`, and `/tools`
+- RAG with embeddings + FAISS for knowledge retrieval
+- Fallback logic if embeddings are unavailable
+- Modular agent design for clarity and scalability
 - Evaluation script for demo metrics
-- Unit/API tests
+- Unit and API testing support
 
-## Installation
+---
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-## How to Run
-
-```bash
-pip install -r requirements.txt
-uvicorn src.api.app:app --reload
-
-
-## Example Requests
+## 🧪 Example Requests
 
 ### Password reset
 ```bash
 curl -X POST http://localhost:8000/support \
   -H "Content-Type: application/json" \
-  -d '{"user_id":"jdoe","message":"I forgot my password and need a reset"}'
-```
-
-### WiFi problem
-```bash
-curl -X POST http://localhost:8000/support \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"jdoe","message":"My WiFi says connected but I have no internet"}'
+  -d "{\"user_id\":\"jdoe\",\"message\":\"I forgot my password\"}"
 ```
 
 ### VPN issue
 ```bash
 curl -X POST http://localhost:8000/support \
   -H "Content-Type: application/json" \
-  -d '{"user_id":"jdoe","message":"My VPN keeps disconnecting this morning"}'
+  -d "{\"user_id\":\"jdoe\",\"message\":\"My VPN is not connecting\"}"
 ```
 
-## Run Tests
+---
+
+## 🧪 Run Tests
 
 ```bash
 pytest -q
 ```
 
-## Run Evaluation Script
+---
+
+## 📊 Run Evaluation Script
 
 ```bash
 python scripts/evaluate.py
 ```
 
-## Presentation Talking Points
+---
 
-- **Problem Definition:** Repetitive IT tickets create long waits and inconsistent troubleshooting.
-- **Product Ownership:** Scope starts with high-volume, low-risk issues to maximize value quickly.
-- **Architecture:** Separate agents improve clarity, observability, and scalability.
-- **RAG:** Answers are grounded in internal troubleshooting docs instead of pure generation.
-- **Workflow Automation:** The system can take action, not just respond.
-- **MCP:** Tool calls use a standard interface, making future enterprise integrations easier.
+## 🎤 Presentation Talking Points
 
-## Roadmap
+- **Problem:** Repetitive IT tickets lead to delays and inconsistent support  
+- **Solution:** Multi-agent system that automates triage and resolution  
+- **Architecture:** Separation of concerns improves scalability and maintainability  
+- **RAG:** Responses are grounded in internal knowledge (reduces hallucination)  
+- **Automation:** System can execute workflows, not just respond  
+- **Scalability:** Modular design supports enterprise integration  
 
-- Replace local KB with Pinecone, Weaviate, or Chroma
-- Add real MCP server/client integration with GitHub, Jira, or ServiceNow
-- Add frontend chat interface
-- Add authentication, RBAC, and audit logging
+---
+
+## 🔮 Roadmap
+
+- Integrate vector databases (Pinecone, Weaviate, Chroma)  
+- Add MCP integration with tools like GitHub, Jira, ServiceNow  
+- Build a frontend chat interface  
+- Add authentication and access control (RBAC)  
